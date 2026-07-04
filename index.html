@@ -559,50 +559,75 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
   var ctx=cv.getContext('2d');
   var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   var W=0,H=0,mx=.5,my=.55,tx=.5,ty=.55,hasPtr=false,born=performance.now();
-  /* NYC skyline silhouette: base steps plus landmark towers */
-  var steps=[[0,8],[.035,13],[.07,10],[.10,16],[.155,12],[.19,18],[.225,9],[.26,15],[.30,20],[.335,13],[.37,24],[.405,17],[.44,28],[.47,20],[.545,22],[.575,30],[.61,18],[.65,14],[.72,19],[.75,26],[.785,15],[.815,21],[.85,12],[.885,17],[.92,10],[.96,14],[1,8]];
+  /* NYC skyline, prerendered offscreen: [x,w,h units,kind 0 block/1 One WTC/2 Empire State/3 Chrysler] */
+  var B=[[.02,.026,10,0],[.05,.03,16,0],[.085,.028,23,0],[.115,.034,15,0],[.15,.038,54,1],[.198,.03,27,0],[.228,.026,19,0],[.258,.03,12,0],[.30,.04,7,0],[.355,.036,9,0],[.41,.03,17,0],[.44,.028,23,0],[.47,.032,29,0],[.515,.05,50,2],[.575,.03,25,0],[.608,.034,26,0],[.64,.024,21,0],[.668,.03,42,3],[.704,.03,25,0],[.738,.034,33,0],[.778,.014,44,0],[.805,.028,27,0],[.84,.032,15,0],[.875,.03,21,0],[.91,.026,13,0],[.945,.032,9,0]];
+  var skyCV=document.createElement('canvas'),skyCtx=skyCV.getContext('2d'),skyW=0,skyH=0;
+  function buildSkyline(d){
+    var u=Math.max(Math.min(H*.19,140),56)*(W>760?1:.62)/60;
+    skyW=W*1.08;skyH=Math.ceil(78*u)+4;
+    skyCV.width=Math.ceil(skyW*d);skyCV.height=Math.ceil(skyH*d);
+    skyCtx.setTransform(d,0,0,d,0,0);
+    skyCtx.clearRect(0,0,skyW,skyH);
+    var base=skyH-1,i,r,c;
+    skyCtx.fillStyle='#10151a';
+    skyCtx.fillRect(0,base-4*u,skyW,4*u+1);
+    for(i=0;i<B.length;i++){
+      var b=B[i],bx=b[0]*skyW,bw=b[1]*skyW,bh=b[2]*u,top=base-bh,cxm=bx+bw/2;
+      if(b[3]===1){
+        skyCtx.beginPath();
+        skyCtx.moveTo(bx,base);skyCtx.lineTo(bx+bw*.24,top);
+        skyCtx.lineTo(bx+bw*.76,top);skyCtx.lineTo(bx+bw,base);
+        skyCtx.closePath();skyCtx.fill();
+        skyCtx.fillRect(cxm-1,top-10*u,2,10*u);
+      }else if(b[3]===2){
+        skyCtx.fillRect(bx,base-bh*.42,bw,bh*.42);
+        skyCtx.fillRect(bx+bw*.15,base-bh*.75,bw*.7,bh*.75);
+        skyCtx.fillRect(bx+bw*.30,base-bh*.92,bw*.4,bh*.92);
+        skyCtx.fillRect(bx+bw*.40,base-bh,bw*.2,bh);
+        skyCtx.fillRect(cxm-1,top-12*u,2,12*u);
+      }else if(b[3]===3){
+        skyCtx.fillRect(bx,top,bw,bh);
+        skyCtx.fillRect(bx+bw*.15,top-2.5*u,bw*.7,2.5*u+1);
+        skyCtx.fillRect(bx+bw*.30,top-4.5*u,bw*.4,2*u+1);
+        skyCtx.fillRect(bx+bw*.42,top-6*u,bw*.16,1.6*u+1);
+        skyCtx.fillRect(cxm-1,top-10*u,2,4.2*u);
+      }else{
+        skyCtx.fillRect(bx,top,bw,bh);
+      }
+    }
+    /* lit windows */
+    skyCtx.fillStyle='rgba(255,214,150,.28)';
+    for(i=0;i<B.length;i++){
+      var b2=B[i];if(b2[2]<10)continue;
+      var wx=b2[0]*skyW,ww=b2[1]*skyW,wh=b2[2]*u;
+      if(b2[3]===1){wx+=ww*.25;ww*=.5;}
+      if(b2[3]===2){wx+=ww*.15;ww*=.7;wh*=.75;}
+      var cols=Math.max(2,Math.floor(ww/6)),rows=Math.max(3,Math.floor(wh/9));
+      for(r=0;r<rows;r++)for(c=0;c<cols;c++){
+        if(((i*31+r*7+c*13)%11)<2){
+          skyCtx.fillRect(wx+2+c*(ww-4)/cols,base-wh+3+r*(wh-7)/rows,1.6,2.6);
+        }
+      }
+    }
+  }
   function ease(p){return p<0?0:p>1?1:p*p*(3-2*p)}
   function draw(now){
     var t=(now-born)/1000;
-    mx+=(tx-mx)*.03;my+=(ty-my)*.03;
-    var px=hasPtr?(mx-.5):Math.sin(t*.05)*.07,
+    mx+=(tx-mx)*.015;my+=(ty-my)*.015;
+    var px=hasPtr?(mx-.5):Math.sin(t*.025)*.07,
         hy=H*.40,vx=W*.5+px*W*.10,vy=hy+(hasPtr?(my-.55)*H*.03:0);
     ctx.clearRect(0,0,W,H);
     /* sky */
     var g=ctx.createLinearGradient(0,0,0,hy);g.addColorStop(0,'#0d1115');g.addColorStop(1,'#1c2127');
     ctx.fillStyle=g;ctx.fillRect(0,0,W,hy+1);
-    g=ctx.createRadialGradient(vx,hy,0,vx,hy,W*.5);g.addColorStop(0,'rgba(242,101,34,.15)');g.addColorStop(1,'rgba(242,101,34,0)');
+    g=ctx.createRadialGradient(vx,hy,0,vx,hy,W*.5);g.addColorStop(0,'rgba(242,101,34,.22)');g.addColorStop(1,'rgba(242,101,34,0)');
     ctx.fillStyle=g;ctx.fillRect(0,0,W,hy+1);
-    /* NYC skyline */
-    ctx.fillStyle='#12161a';
-    var u=Math.max(Math.min(H*.16,120),56)*(W>760?1:.62)/60,sh=px*W*.04,i;
-    function SX(f){return f*W-sh}
-    ctx.beginPath();ctx.moveTo(SX(0)-60,hy+2);
-    for(i=0;i<steps.length;i++){
-      var xx=SX(steps[i][0]),hh=steps[i][1]*u,x2=SX(i+1<steps.length?steps[i+1][0]:1.05);
-      ctx.lineTo(xx,hy-hh);ctx.lineTo(x2,hy-hh);
-    }
-    ctx.lineTo(SX(1.05),hy+2);ctx.closePath();ctx.fill();
-    /* One World Trade */
-    var c1=SX(.13),w1=W*.030,h1=50*u;
-    ctx.beginPath();
-    ctx.moveTo(c1-w1*.5,hy+2);ctx.lineTo(c1-w1*.26,hy-h1);ctx.lineTo(c1+w1*.26,hy-h1);ctx.lineTo(c1+w1*.5,hy+2);
-    ctx.closePath();ctx.fill();
-    ctx.fillRect(c1-1,hy-h1-8*u,2,8*u);
-    /* Empire State */
-    var c2=SX(.52);
-    ctx.fillRect(c2-W*.026,hy-18*u,W*.052,18*u+2);
-    ctx.fillRect(c2-W*.017,hy-38*u,W*.034,38*u);
-    ctx.fillRect(c2-W*.011,hy-47*u,W*.022,47*u);
-    ctx.fillRect(c2-W*.006,hy-51*u,W*.012,51*u);
-    ctx.fillRect(c2-1,hy-58*u,2,58*u);
-    /* Chrysler */
-    var c3=SX(.68);
-    ctx.fillRect(c3-W*.013,hy-36*u,W*.026,36*u+2);
-    ctx.fillRect(c3-W*.009,hy-40*u,W*.018,4.5*u);
-    ctx.fillRect(c3-W*.006,hy-43.5*u,W*.012,4*u);
-    ctx.fillRect(c3-W*.003,hy-46*u,W*.006,3*u);
-    ctx.fillRect(c3-1,hy-51*u,2,5.5*u);
+    /* warm backlight band + prerendered NYC skyline */
+    var sh=px*W*.04,i;
+    g=ctx.createLinearGradient(0,hy-skyH,0,hy);
+    g.addColorStop(0,'rgba(242,101,34,0)');g.addColorStop(1,'rgba(255,140,70,.16)');
+    ctx.fillStyle=g;ctx.fillRect(0,hy-skyH,W,skyH);
+    if(skyW)ctx.drawImage(skyCV,-(skyW-W)/2-sh,hy-skyH+1,skyW,skyH);
     /* lot surface */
     g=ctx.createLinearGradient(0,hy,0,H);g.addColorStop(0,'#1c2126');g.addColorStop(1,'#22272c');
     ctx.fillStyle=g;ctx.fillRect(0,hy,W,H-hy);
@@ -612,7 +637,7 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
     var mob=W<640,aw=Math.max(W*(mob?.30:.15),90),st=W*(mob?.17:.085),
         n=Math.max(2,Math.round(W/260)),y1=hy+(H-hy)*.17,y0=H+30,lines=[],k,side;
     for(side=-1;side<2;side+=2)for(k=0;k<=n;k++)lines.push([W*.5+side*(aw+k*st),k===0]);
-    var cx=mx*W,cy=my*H,cyc=Math.floor(t/7),sw=reduce?-1:cyc%lines.length,pr=ease((t-cyc*7)/3);
+    var cx=mx*W,cy=my*H,cyc=Math.floor(t/14),sw=reduce?-1:cyc%lines.length,pr=ease((t-cyc*14)/6);
     for(i=0;i<lines.length;i++){
       var bx=lines[i][0],edge=lines[i][1],
           x1=bx+(vx-bx)*(y1-y0)/(vy-y0),
@@ -620,22 +645,22 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
           glo=hasPtr?Math.max(0,1-d/(W*.22)):0,
           a=(edge?.34:.22)+glo*.3;
       ctx.strokeStyle='rgba(255,201,64,'+a.toFixed(3)+')';
-      ctx.lineWidth=edge?4.5:3.5;
+      ctx.lineWidth=edge?9:7;
       ctx.beginPath();ctx.moveTo(bx,y0);ctx.lineTo(x1,y1);ctx.stroke();
       /* repaint sweep: one line repaints itself like a striping machine pass */
       if(i===sw&&pr>0&&pr<1){
         var yb=y0-(y0-y1)*pr,xb=bx+(vx-bx)*(yb-y0)/(vy-y0);
-        ctx.strokeStyle='rgba(255,222,110,.65)';ctx.lineWidth=5;
+        ctx.strokeStyle='rgba(255,222,110,.65)';ctx.lineWidth=10;
         ctx.beginPath();ctx.moveTo(bx,y0);ctx.lineTo(xb,yb);ctx.stroke();
-        ctx.save();ctx.shadowColor='rgba(255,215,120,.95)';ctx.shadowBlur=12;
+        ctx.save();ctx.shadowColor='rgba(255,215,120,.95)';ctx.shadowBlur=14;
         ctx.fillStyle='rgba(255,240,190,.98)';
-        ctx.beginPath();ctx.arc(xb,yb,3.5,0,7);ctx.fill();ctx.restore();
+        ctx.beginPath();ctx.arc(xb,yb,5,0,7);ctx.fill();ctx.restore();
       }
     }
     /* center aisle arrow marking */
     var by=H*1.02;
     function P(s){return[W*.5+(vx-W*.5)*s,by+(vy-by)*s]}
-    var ap=reduce?1:ease((t-.3)/2.2);
+    var ap=reduce?1:ease((t-.3)/4);
     if(ap>0){
       var wS=Math.max(W*.013,8),wH=Math.max(W*.034,22),
           wf=function(s,w0){return w0*(1-s*1.15)},
@@ -666,6 +691,7 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
     W=cv.clientWidth;H=cv.clientHeight;
     cv.width=Math.max(1,W*d);cv.height=Math.max(1,H*d);
     ctx.setTransform(d,0,0,d,0,0);
+    buildSkyline(d);
     draw(reduce?born+60000:performance.now());
   }
   var hero=document.getElementById('hero');
