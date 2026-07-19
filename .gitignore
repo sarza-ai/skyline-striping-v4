@@ -1,0 +1,6 @@
+# Never publish audit docs, contracts, or other working PDFs from this folder
+*.pdf
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
