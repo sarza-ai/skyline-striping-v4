@@ -276,13 +276,13 @@ h2.st{font-family:var(--fd);font-size:clamp(42px,5.5vw,70px);line-height:.93;let
 #glb-count{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);white-space:nowrap}
 #glb-x{flex-shrink:0;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:20px;cursor:pointer;opacity:.85;line-height:1;padding:9px 13px;border-radius:4px;transition:background .2s}
 #glb-x:hover{background:rgba(242,101,34,.6);opacity:1}
-#glb-grid{flex:1;overflow-y:auto;padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
-#glb-grid a{display:block;border-radius:3px;overflow:hidden;background:var(--ash3);aspect-ratio:4/3}
+#glb-grid{flex:1;overflow-y:auto;padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));grid-auto-rows:220px;gap:10px}
+#glb-grid a{display:block;border-radius:3px;overflow:hidden;background:var(--ash3)}
 #glb-grid img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease,opacity .35s ease;opacity:0}
 #glb-grid img.loaded{opacity:1}
 #glb-grid a:hover img{transform:scale(1.05)}
 @media(max-width:600px){
-  #glb-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;padding:14px}
+  #glb-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-rows:150px;gap:6px;padding:14px}
   #glb-head{padding:14px 16px}
 }
 
