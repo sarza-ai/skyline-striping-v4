@@ -1409,6 +1409,7 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
   var PHONE="(845) 797.8049", TEL="tel:+18457978049", EMAIL="mike@skylinestriping.com";
   var AI_ENDPOINT="https://skyline-striping-chatbot.sarza-527.workers.dev";
   var aiHistory=[];
+  var FORM_ENDPOINT="https://api.web3forms.com/submit", FORM_ACCESS_KEY="defe1900-3921-4a37-8ba1-e4a85f2989dd";
   var root=document.getElementById("ssbot"), fab=document.getElementById("ssbot-fab"),
       panel=document.getElementById("ssbot-panel"), log=document.getElementById("ssbot-log"),
       chipsEl=document.getElementById("ssbot-chips"), form=document.getElementById("ssbot-form"),
@@ -1470,10 +1471,30 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
   }
   function finishQuote(svc){
     lead.service=svc;state="idle";chips([]);
-    var subject="Quote Request, "+lead.name,
-        body="Name: "+lead.name+"\nContact: "+lead.contact+"\nService: "+lead.service+"\n\n(Sent from the website chat assistant.)";
-    var mailto="mailto:"+EMAIL+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
-    botSay("Perfect, here's what I've got:<br>👤 "+esc(lead.name)+"<br>📞 "+esc(lead.contact)+"<br>🛠️ "+esc(lead.service)+"<br><br>Tap below to send it to Mike, or call now and skip the wait.",function(){
+    var subject="New Chat Quote Request: "+lead.service+", "+lead.name,
+        body="Name: "+lead.name+"\nContact: "+lead.contact+"\nService: "+lead.service+"\n\n(Sent from the website chat assistant.)",
+        mailto="mailto:"+EMAIL+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+
+    botSay("Perfect, here's what I've got:<br>👤 "+esc(lead.name)+"<br>📞 "+esc(lead.contact)+"<br>🛠️ "+esc(lead.service)+"<br><br>Sending this to Mike now…");
+
+    var payload={access_key:FORM_ACCESS_KEY,subject:subject,from_name:"Skyline Striping Chat Assistant",name:lead.name,contact:lead.contact,service:lead.service,message:body};
+    fetch(FORM_ENDPOINT,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res&&res.success){
+          botSay("Done! Mike has your request and will reach out shortly. Need it faster?",function(){
+            chipsEl.innerHTML="";
+            var c=document.createElement("a");c.href=TEL;c.className="ssbot-chip solid";c.textContent="📞 Call "+PHONE;c.style.textDecoration="none";chipsEl.appendChild(c);
+            var r=document.createElement("button");r.className="ssbot-chip";r.textContent="Start over";r.onclick=function(){handle("restart");};chipsEl.appendChild(r);
+          });
+        } else {
+          leadMailFallback(mailto);
+        }
+      })
+      .catch(function(){leadMailFallback(mailto);});
+  }
+  function leadMailFallback(mailto){
+    botSay("I couldn't send that automatically, tap below to send it to Mike directly, or call now.",function(){
       chipsEl.innerHTML="";
       var a=document.createElement("a");a.href=mailto;a.className="ssbot-chip solid";a.textContent="✉️ Send to Mike";a.style.textDecoration="none";chipsEl.appendChild(a);
       var c=document.createElement("a");c.href=TEL;c.className="ssbot-chip";c.textContent="📞 Call "+PHONE;c.style.textDecoration="none";chipsEl.appendChild(c);
