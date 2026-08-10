@@ -1407,6 +1407,8 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
 <script>
 (function(){
   var PHONE="(845) 797.8049", TEL="tel:+18457978049", EMAIL="mike@skylinestriping.com";
+  var AI_ENDPOINT="https://skyline-striping-chatbot.YOUR-SUBDOMAIN.workers.dev";
+  var aiHistory=[];
   var root=document.getElementById("ssbot"), fab=document.getElementById("ssbot-fab"),
       panel=document.getElementById("ssbot-panel"), log=document.getElementById("ssbot-log"),
       chipsEl=document.getElementById("ssbot-chips"), form=document.getElementById("ssbot-form"),
@@ -1494,7 +1496,27 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
     if(has("service","what do you","offer","do you do")) return handle("services");
     if(has("human","person","mike","call","phone","talk","speak","contact","email")) return handle("human");
     if(has("hi","hello","hey","yo ")) return botSay("Hey! 👋 I can tell you about our services, ADA work, service area, or set up a free quote. What would you like?",function(){chips(GREET_CHIPS);});
-    botSay("Good question, the fastest way to get an exact answer is a quick chat with Mike, or I can start a free quote for you.",function(){chips([{label:"Free quote",act:"quote",solid:true},{label:"Talk to a person",act:"human"},{label:"Our services",act:"services"}]);});
+    aiFallback(t);
+  }
+
+  // ── AI fallback (Cloudflare Workers AI, knowledge base drawn from the site) ──
+  function aiFallback(t){
+    var typing=document.createElement("div");typing.className="ssbot-typing";typing.innerHTML="<span></span><span></span><span></span>";log.appendChild(typing);scroll();
+    fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t,history:aiHistory})})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        typing.remove();
+        var reply=(res&&res.reply)?res.reply:"Sorry, I'm not sure about that, call us at "+PHONE+" and we'll help directly.";
+        bubble(esc(reply),"bot");
+        aiHistory.push({role:"user",content:t});
+        aiHistory.push({role:"assistant",content:reply});
+        if(aiHistory.length>6)aiHistory=aiHistory.slice(-6);
+        chips([{label:"Free quote",act:"quote",solid:true},{label:"Talk to a person",act:"human"}]);
+      })
+      .catch(function(){
+        typing.remove();
+        botSay("Good question, the fastest way to get an exact answer is a quick chat with Mike, or I can start a free quote for you.",function(){chips([{label:"Free quote",act:"quote",solid:true},{label:"Talk to a person",act:"human"},{label:"Our services",act:"services"}]);});
+      });
   }
 
   form.addEventListener("submit",function(e){e.preventDefault();var t=input.value.trim();if(!t)return;userMsg(t);input.value="";route(t);});
