@@ -76,7 +76,7 @@ export default {
     const messages = [{ role: "system", content: SYSTEM_PROMPT }, ...history, { role: "user", content: userMessage }];
 
     try {
-      const aiResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      const aiResp = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
         messages,
         max_tokens: 220,
       });
@@ -85,6 +85,7 @@ export default {
         headers: { ...headers, "Content-Type": "application/json" },
       });
     } catch (err) {
+      console.error("AI call failed:", err && err.message, err && err.stack);
       return new Response(
         JSON.stringify({ reply: "Sorry, I'm having trouble answering that right now. Call (845) 797.8049 or email mike@skylinestriping.com and we'll help directly." }),
         { status: 200, headers: { ...headers, "Content-Type": "application/json" } }

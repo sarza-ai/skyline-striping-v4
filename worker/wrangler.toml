@@ -1,6 +1,7 @@
 name = "skyline-striping-chatbot"
 main = "src/index.js"
 compatibility_date = "2026-08-10"
+account_id = "5278c1d21b83223cb4c285eec701a90d"
 
 [ai]
 binding = "AI"
