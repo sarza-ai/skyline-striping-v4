@@ -1456,6 +1456,7 @@ footer{background:var(--ink);padding:60px 5% 28px;border-top:1px solid rgba(242,
     if(act=="call"){window.location.href=TEL;return;}
     if(act=="quote"){startQuote();return;}
     if(act=="restart"){log.innerHTML="";lead={};state="idle";greet();return;}
+    if(act=="svc"){handleLeadText(label);return;}
   }
 
   // ── Lead-capture flow ──
